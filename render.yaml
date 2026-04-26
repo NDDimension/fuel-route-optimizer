@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: routeopt-api
+    runtime: python
+    plan: starter
+    region: oregon
+    rootDir: route_optimizer
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /health/
+    autoDeployTrigger: commit
+    disk:
+      name: routeopt-cache
+      mountPath: /opt/render/project/src/route_optimizer/render-data
+      sizeGB: 1
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: MAPBOX_TOKEN
+        sync: false
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: GEOCODE_CACHE_PATH
+        value: render-data/geocode_cache.db
+      - key: FUEL_CSV_PATH
+        value: data/fuel_prices.csv
+      - key: ALLOWED_HOSTS
+        value: ""
+      - key: CORS_ALLOWED_ORIGINS
+        value: ""
+      - key: CORS_ALLOWED_ORIGIN_REGEXES
+        value: ""

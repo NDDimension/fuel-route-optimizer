@@ -1,0 +1,17 @@
+.env
+.env.local
+node_modules/
+dist/
+*.tsbuildinfo
+*.pyc
+__pycache__/
+.venv/
+route_optimizer/.venv/
+route_optimizer/.env
+route_optimizer/geocode_cache.db
+route_optimizer/render-data/
+.codex
+tailwind.config.js
+tailwind.config.d.ts
+vite.config.js
+vite.config.d.ts

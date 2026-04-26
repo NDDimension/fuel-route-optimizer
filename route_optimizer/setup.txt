@@ -1,0 +1,63 @@
+ 1. Prerequisites & Tools
+   * Python 3.11+: The project uses modern typing and libraries like scipy and numpy.
+   * Mapbox API Token: Essential for geocoding and routing. You can get a free one at account.mapbox.com (https://account.mapbox.com/).
+   * Terminal/Shell: To execute commands.
+
+  2. Setup Steps
+
+  Step 1: Environment Preparation
+  Create a virtual environment to isolate dependencies and install the required packages.
+
+    1 # Create the virtual environment
+    2 python -m venv .venv
+    3
+    4 # Activate the virtual environment
+    5 # Windows:
+    6 .venv\Scripts\activate
+    7 # Linux/macOS:
+    8 # source .venv/bin/activate
+    9
+   10 # Install dependencies
+   11 pip install -r requirements.txt
+
+  Step 2: Configuration
+  The project uses environment variables managed via a .env file.
+   1. Locate .env.example in the root directory.
+   2. Copy/Rename it to .env.
+   3. Open .env and set your MAPBOX_TOKEN.
+   1     MAPBOX_TOKEN=pk.your_actual_token_here
+
+  Step 3: Data Initialization (Geocode Warmup)
+  The project processes a CSV of ~4,200 fuel stations. To ensure the API is fast, you must "warm up" the local SQLite geocode cache. This step only needs to be run once.
+
+   1 # This will take 60–120 seconds as it calls Mapbox to locate all stations
+   2 python manage.py preload_fuel_data
+
+  Step 4: Run the Server
+  Start the Django development server.
+   1 python manage.py runserver
+  The server will be available at http://localhost:8000.
+
+  3. Usage & Testing
+  The core functionality is exposed via a single POST endpoint. You can test it using curl or any API client.
+
+  Endpoint: POST /route/
+
+  Request Body:
+
+   1 {
+   2     "start": "New York, NY",
+   3     "end": "Los Angeles, CA"
+   4 }
+
+  Example Command:
+
+   1 curl -X POST http://localhost:8000/route/ `
+   2      -H "Content-Type: application/json" `
+   3      -d '{"start": "Chicago, IL", "end": "Dallas, TX"}'
+
+  4. Project Structure Highlights
+   * data/fuel_prices.csv: Source data for fuel stations and prices.
+   * geocode_cache.db: Created after Step 3; stores location data to avoid repeated API calls.
+   * route/services/: Contains the core logic for spatial indexing (fuel.py), routing (routing.py), and the greedy optimization algorithm (optimizer.py).
+   * config/settings.py: Note that DATABASES = {} is intentional; the project uses memory and a local SQLite file instead of a full Django database.

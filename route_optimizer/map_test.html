@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Route Optimizer Map Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 600px; width: 100%; border-radius: 12px; margin-top: 20px; border: 2px solid #ccc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; background: #f8f9fa; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+        button { background: #28a745; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        button:hover { background: #218838; }
+        .stats { display: flex; justify-content: space-between; margin-top: 15px; font-weight: bold; color: #555; }
+        #loading { display: none; color: #007bff; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Route & Fuel Stop Optimizer</h1>
+        <p>Enter any two US cities to calculate the most cost-effective trip.</p>
+        
+        <div class="input-group">
+            <input type="text" id="start" value="New York, NY" placeholder="Start Location">
+            <input type="text" id="end" value="Los Angeles, CA" placeholder="End Location">
+            <button onclick="calculate()">Find Optimal Route</button>
+        </div>
+        
+        <div id="loading">Calculating optimal path and indexing fuel stops...</div>
+        
+        <div class="stats" id="stats">
+            <span id="miles"></span>
+            <span id="cost"></span>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // Initialize map centered on the USA
+        const map = L.map('map').setView([39.8283, -98.5795], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let polyline = null;
+        let markers = [];
+
+        async function calculate() {
+            const start = document.getElementById('start').value;
+            const end = document.getElementById('end').value;
+            const loading = document.getElementById('loading');
+            
+            loading.style.display = "block";
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/route/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start, end })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert("Error: " + (err.error || "Failed to fetch route"));
+                    return;
+                }
+
+                const data = await response.json();
+
+                // 1. Clear previous layers
+                if (polyline) map.removeLayer(polyline);
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+
+                // 2. Draw the Route Line
+                const points = data.route.map(p => [p.lat, p.lon]);
+                polyline = L.polyline(points, {color: '#007bff', weight: 5, opacity: 0.8}).addTo(map);
+
+                // 3. Add Start and End Markers
+                markers.push(L.marker(points[0]).addTo(map).bindPopup("Start: " + data.start));
+                markers.push(L.marker(points[points.length - 1]).addTo(map).bindPopup("End: " + data.end));
+
+                // 4. Add Fuel Stop Markers (Circles)
+                data.fuel_stops.forEach(stop => {
+                    const m = L.circleMarker([stop.lat, stop.lon], {
+                        radius: 10,
+                        fillColor: "#ffc107",
+                        color: "#000",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).addTo(map);
+                    
+                    m.bindPopup(`
+                        <strong>${stop.name}</strong><br>
+                        Price: $${stop.price_per_gallon} / gal<br>
+                        Added: ${stop.gallons_added.toFixed(1)} gal<br>
+                        Stop Cost: $${stop.stop_cost.toFixed(2)}
+                    `);
+                    markers.push(m);
+                });
+
+                // 5. Update Stats and View
+                document.getElementById('miles').innerText = "Total Distance: " + data.total_miles + " miles";
+                document.getElementById('cost').innerText = "Total Fuel Cost: $" + data.total_fuel_cost.toFixed(2);
+                map.fitBounds(polyline.getBounds(), {padding: [50, 50]});
+
+            } catch (error) {
+                console.error(error);
+                alert("Make sure the Django server is running at http://127.0.0.1:8000");
+            } finally {
+                loading.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

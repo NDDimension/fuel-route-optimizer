@@ -1,0 +1,62 @@
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #0a0a0f;
+  --surface-panel: #0f0f17;
+  --surface-card: #16161f;
+  --surface-border: #1e1e2e;
+  --accent: #22d3ee;
+  color: #f1f5f9;
+  background: #0a0a0f;
+  font-family: 'Inter', sans-serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.mapboxgl-canvas {
+  user-select: none;
+}
+
+.mapboxgl-popup-content {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #16161f !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #1e1e2e;
+  border-radius: 2px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #2e2e3e;
+}
