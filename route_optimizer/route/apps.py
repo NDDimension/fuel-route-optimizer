@@ -1,33 +1,26 @@
 """
 Route app configuration.
 
-Keep startup lightweight for Render deployment.
-Heavy services are lazy-loaded on first request instead of during boot.
+IMPORTANT:
+Do NOT perform expensive synchronous startup work directly in ready().
+
+Render requires the app to bind to a port quickly.
+Heavy initialization is delegated to a background bootstrap thread.
 """
 
-import logging
-
 from django.apps import AppConfig
-
-logger = logging.getLogger(__name__)
 
 
 class RouteConfig(AppConfig):
     name = "route"
     default_auto_field = "django.db.models.BigAutoField"
 
-    # Shared singleton services
     geocoding_service = None
     fuel_station_index = None
     fuel_optimizer = None
     routing_service = None
 
-    def ready(self) -> None:
-        """
-        Lightweight startup only.
+    def ready(self):
+        from route.services.bootstrap import bootstrap_services
 
-        DO NOT preload fuel stations or geocode data here.
-        Render kills deployments if startup takes too long before
-        Gunicorn binds to the PORT.
-        """
-        logger.info("=== Route Optimizer app loaded ===")
+        bootstrap_services(RouteConfig)
