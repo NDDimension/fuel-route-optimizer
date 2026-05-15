@@ -1,5 +1,17 @@
-preload_app = False
-bind = "0.0.0.0:10000"
+import os
+
+bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
+
 workers = 1
-timeout = 300       # generous — geocoding 4200 cities takes up to 90s on cold start
+
+threads = 2
+
+timeout = 300
+
+preload_app = False
+
 loglevel = "info"
+
+accesslog = "-"
+
+errorlog = "-"
