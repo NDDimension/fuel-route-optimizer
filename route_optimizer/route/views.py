@@ -1,84 +1,35 @@
 """
-Route optimization API view.
-"""
+            if BootstrapState.error:
+                return Response(
+                    {
+                        "error": BootstrapState.error,
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
-import logging
-
-import requests as http_requests
-from django.http import JsonResponse
-from rest_framework import status
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from .apps import RouteConfig
-from .serializers import RouteRequestSerializer, RouteResponseSerializer
-from .services.bootstrap import initialize_services
-from .services.optimizer import RouteOptimizationError
-
-logger = logging.getLogger(__name__)
-
-
-def health_check(_request):
-    """
-    Lightweight health endpoint for Render.
-
-    Returns 200 immediately so Render knows the app is alive,
-    even if heavy services are still warming up.
-    """
-    return JsonResponse(
-        {
-            "status": "ok",
-            "services_ready": RouteConfig.routing_service is not None,
-        },
-        status=status.HTTP_200_OK,
-    )
-
-
-class RouteView(APIView):
-
-    def post(self, request: Request) -> Response:
-        # --------------------------------------------------------------
-        # Lazy initialize services on first request
-        # --------------------------------------------------------------
-        try:
-            initialize_services()
-        except Exception:
-            logger.exception("Failed initializing route services.")
             return Response(
-                {"error": "Failed to initialize backend services."},
+                {
+                    "error": (
+                        "Route optimizer services are still starting. "
+                        "Please retry in 30-60 seconds."
+                    )
+                },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-
-        # --------------------------------------------------------------
-        # Validate input
-        # --------------------------------------------------------------
-        serializer = RouteRequestSerializer(data=request.data)
-
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        start: str = serializer.validated_data["start"].strip()
-        end: str = serializer.validated_data["end"].strip()
 
         routing_svc = RouteConfig.routing_service
         fuel_index = RouteConfig.fuel_station_index
         optimizer = RouteConfig.fuel_optimizer
 
         try:
-            # ----------------------------------------------------------
-            # Fetch route
-            # ----------------------------------------------------------
+            # ------------------------------------------------------------------
+            # 3. Fetch route
+            # ------------------------------------------------------------------
             route_result = routing_svc.get_route(start, end)
 
-            # ----------------------------------------------------------
-            # Find nearby fuel stations
-            # ----------------------------------------------------------
-            from django.conf import settings
-
+            # ------------------------------------------------------------------
+            # 4. Find nearby stations
+            # ------------------------------------------------------------------
             nearby = fuel_index.find_near_route(
                 route_coords=route_result.coords,
                 route_cum_miles=route_result.cum_miles,
@@ -86,13 +37,13 @@ class RouteView(APIView):
             )
 
             logger.info(
-                "Found %d candidate fuel stations.",
+                "Found %d candidate stations near route",
                 len(nearby),
             )
 
-            # ----------------------------------------------------------
-            # Optimize fuel stops
-            # ----------------------------------------------------------
+            # ------------------------------------------------------------------
+            # 5. Optimize route
+            # ------------------------------------------------------------------
             opt_result = optimizer.optimize(
                 candidate_stations=nearby,
                 total_route_miles=route_result.total_miles,
@@ -119,16 +70,16 @@ class RouteView(APIView):
             )
 
         except Exception:
-            logger.exception("Unexpected error processing route request.")
+            logger.exception("Unexpected route processing failure")
 
             return Response(
-                {"error": "Internal server error."},
+                {"error": "Internal server error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # --------------------------------------------------------------
-        # Response
-        # --------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # 6. Response payload
+        # ------------------------------------------------------------------
         response_data = {
             "start": start,
             "end": end,
@@ -147,21 +98,3 @@ class RouteView(APIView):
                     "lat": stop.lat,
                     "lon": stop.lon,
                     "route_mile": stop.route_mile,
-                    "off_route_miles": stop.off_route_miles,
-                    "gallons_added": stop.gallons_added,
-                    "price_per_gallon": stop.price_per_gallon,
-                    "stop_cost": stop.stop_cost,
-                }
-                for stop in opt_result.fuel_stops
-            ],
-            "total_fuel_cost": opt_result.total_fuel_cost,
-            "total_gallons": opt_result.total_gallons,
-        }
-
-        out_serializer = RouteResponseSerializer(data=response_data)
-        out_serializer.is_valid(raise_exception=True)
-
-        return Response(
-            out_serializer.validated_data,
-            status=status.HTTP_200_OK,
-        )
