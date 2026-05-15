@@ -456,7 +456,3 @@ The repository includes a fuel price dataset used by the backend optimizer to lo
 - exportable trip summaries for dispatch teams
 
 ---
-
-## License
-
-This repository currently does not declare a license. If you plan to distribute or open-source it broadly, add an explicit license file (MIT is a common choice for open-source projects).
