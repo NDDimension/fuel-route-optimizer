@@ -121,6 +121,22 @@ export function Sidebar({
                 registerCard={registerCard}
               />
             ) : null}
+
+            <div className="mt-8 rounded-2xl border border-accent/20 bg-accent/5 p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent/20 text-accent">
+                  <span className="text-[10px] font-bold">USA</span>
+                </div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-text-primary">Regional Scope</p>
+              </div>
+              <p className="text-sm text-text-secondary leading-relaxed mb-4">
+                Optimized for long-haul routes within the <span className="text-text-primary font-medium">United States</span> only. Fuel data and geocoding are localized to US territories.
+              </p>
+              <div className="flex items-center justify-between border-t border-accent/10 pt-3">
+                <p className="text-[10px] uppercase tracking-widest text-text-muted">Developer</p>
+                <p className="text-xs font-medium text-accent">Dhanraj Sharma</p>
+              </div>
+            </div>
           </div>
         </motion.div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-surface-panel" />
