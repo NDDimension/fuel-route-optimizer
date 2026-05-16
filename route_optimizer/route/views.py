@@ -24,6 +24,20 @@ from .services.optimizer import (
 logger = logging.getLogger(__name__)
 
 
+def services_ready() -> bool:
+    """
+    Real readiness check based on initialized services,
+    not process-local bootstrap booleans.
+    """
+
+    return all([
+        RouteConfig.geocoding_service is not None,
+        RouteConfig.fuel_station_index is not None,
+        RouteConfig.routing_service is not None,
+        RouteConfig.fuel_optimizer is not None,
+    ])
+
+
 def health_check(_request):
     """
     Health endpoint used by Render.
@@ -39,7 +53,7 @@ def health_check(_request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    if BootstrapState.ready:
+    if services_ready():
         return JsonResponse(
             {
                 "status": "ok",
@@ -63,6 +77,7 @@ class RouteView(APIView):
     """
 
     def post(self, request: Request) -> Response:
+
         serializer = RouteRequestSerializer(
             data=request.data
         )
@@ -84,7 +99,7 @@ class RouteView(APIView):
         # ---------------------------------------------------------
         # Ensure services are ready
         # ---------------------------------------------------------
-        if not self._services_ready():
+        if not services_ready():
 
             if BootstrapState.error:
                 return Response(
@@ -104,7 +119,9 @@ class RouteView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        routing_service = RouteConfig.routing_service
+        routing_service = (
+            RouteConfig.routing_service
+        )
 
         fuel_station_index = (
             RouteConfig.fuel_station_index
@@ -158,18 +175,21 @@ class RouteView(APIView):
             )
 
         except ValueError as exc:
+
             return Response(
                 {"error": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         except RouteOptimizationError as exc:
+
             return Response(
                 {"error": str(exc)},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
 
         except http_requests.HTTPError as exc:
+
             logger.error(
                 "Mapbox API error: %s",
                 exc,
@@ -185,6 +205,7 @@ class RouteView(APIView):
             )
 
         except Exception:
+
             logger.exception(
                 "Unexpected route processing failure"
             )
@@ -263,7 +284,3 @@ class RouteView(APIView):
             output_serializer.validated_data,
             status=status.HTTP_200_OK,
         )
-
-    @staticmethod
-    def _services_ready() -> bool:
-        return BootstrapState.ready
