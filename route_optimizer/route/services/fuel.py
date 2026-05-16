@@ -285,4 +285,3 @@ def load_fuel_stations(
         )
 
     return FuelStationIndex(stations)
-  logger.info("fuel.py import finished")
