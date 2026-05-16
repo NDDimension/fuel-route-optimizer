@@ -53,7 +53,7 @@ def health_check(_request):
             "status": "starting",
             "services_ready": False,
         },
-        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        status=status.HTTP_200_OK,
     )
 
 
