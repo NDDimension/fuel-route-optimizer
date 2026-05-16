@@ -1,9 +1,6 @@
-"""
-Background bootstrapper for expensive startup services.
-"""
-
 import logging
 import threading
+import traceback
 
 from django.conf import settings
 
@@ -11,10 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class BootstrapState:
-    """
-    Global bootstrap state.
-    """
-
     started = False
     ready = False
     error = None
@@ -24,33 +17,66 @@ _bootstrap_lock = threading.Lock()
 
 
 def bootstrap_services(route_config_cls):
-    """
-    Initialize expensive services in background thread.
-    """
+
+    logger.info("bootstrap_services() entered")
 
     with _bootstrap_lock:
+
+        logger.info("bootstrap lock acquired")
+
         if BootstrapState.started:
+            logger.info("bootstrap already started")
             return
 
         BootstrapState.started = True
 
     def _run():
-        try:
-            if not settings.MAPBOX_TOKEN:
-                raise RuntimeError(
-                    "MAPBOX_TOKEN environment variable is missing."
-                )
 
-            from route.services.geocoding import GeocodingService
-            from route.services.fuel import load_fuel_stations
-            from route.services.routing import RoutingService
-            from route.services.optimizer import FuelOptimizer
+        logger.info("bootstrap thread started")
+
+        try:
+
+            logger.info(
+                "MAPBOX token exists: %s",
+                bool(settings.MAPBOX_TOKEN),
+            )
+
+            from route.services.geocoding import (
+                GeocodingService,
+            )
+
+            logger.info(
+                "Imported GeocodingService"
+            )
+
+            from route.services.fuel import (
+                load_fuel_stations,
+            )
+
+            logger.info(
+                "Imported load_fuel_stations"
+            )
+
+            from route.services.routing import (
+                RoutingService,
+            )
+
+            logger.info(
+                "Imported RoutingService"
+            )
+
+            from route.services.optimizer import (
+                FuelOptimizer,
+            )
+
+            logger.info(
+                "Imported FuelOptimizer"
+            )
 
             logger.info(
                 "=== Route Optimizer bootstrap started ==="
             )
 
-            # Geocoding service
             route_config_cls.geocoding_service = (
                 GeocodingService()
             )
@@ -68,10 +94,11 @@ def bootstrap_services(route_config_cls):
                 "Cache exists: %s",
                 settings.GEOCODE_CACHE_PATH.exists(),
             )
-            
-            logger.info("Before load_fuel_stations")
-            
-            # Fuel station index
+
+            logger.info(
+                "Before load_fuel_stations"
+            )
+
             route_config_cls.fuel_station_index = (
                 load_fuel_stations(
                     csv_path=settings.FUEL_CSV_PATH,
@@ -81,13 +108,10 @@ def bootstrap_services(route_config_cls):
                 )
             )
 
-            logger.info("After load_fuel_stations")
-            
             logger.info(
-                "Fuel station index loaded"
+                "After load_fuel_stations"
             )
 
-            # Routing service
             route_config_cls.routing_service = (
                 RoutingService(
                     geocoding_service=(
@@ -100,7 +124,6 @@ def bootstrap_services(route_config_cls):
                 "Routing service initialized"
             )
 
-            # Optimizer
             route_config_cls.fuel_optimizer = (
                 FuelOptimizer()
             )
@@ -116,10 +139,16 @@ def bootstrap_services(route_config_cls):
             )
 
         except Exception as exc:
+
             BootstrapState.error = str(exc)
 
-            logger.exception(
-                "Bootstrap failed"
+            logger.error(
+                "BOOTSTRAP FAILED: %s",
+                exc,
+            )
+
+            logger.error(
+                traceback.format_exc()
             )
 
     thread = threading.Thread(
@@ -127,4 +156,8 @@ def bootstrap_services(route_config_cls):
         daemon=True,
     )
 
+    logger.info("starting bootstrap thread")
+
     thread.start()
+
+    logger.info("bootstrap thread launched")
