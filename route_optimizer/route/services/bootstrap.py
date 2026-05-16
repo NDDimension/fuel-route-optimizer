@@ -69,6 +69,8 @@ def bootstrap_services(route_config_cls):
                 settings.GEOCODE_CACHE_PATH.exists(),
             )
             
+            logger.info("Before load_fuel_stations")
+            
             # Fuel station index
             route_config_cls.fuel_station_index = (
                 load_fuel_stations(
@@ -79,6 +81,8 @@ def bootstrap_services(route_config_cls):
                 )
             )
 
+            logger.info("After load_fuel_stations")
+            
             logger.info(
                 "Fuel station index loaded"
             )
