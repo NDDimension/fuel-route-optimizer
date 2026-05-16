@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./route_optimizer
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    env_file:
+      - ./route_optimizer/.env
+    # Optional: Persist the geocode cache so it doesn't re-fetch on every restart
+    volumes:
+      - ./route_optimizer/geocode_cache.db:/app/geocode_cache.db
+
+  frontend:
+    build:
+      context: .
+      args:
+        # The frontend needs the backend URL to be accessible from the BROWSER.
+        # If you are running locally, http://localhost:8000 is correct.
+        - VITE_API_BASE_URL=http://localhost:8000
+        # This needs to be set in your environment or a .env file at the root
+        - VITE_MAPBOX_TOKEN=${VITE_MAPBOX_TOKEN}
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+# Note: Before running, ensure you have a .env file in route_optimizer/ 
+# with your MAPBOX_TOKEN, or set VITE_MAPBOX_TOKEN in your environment.
