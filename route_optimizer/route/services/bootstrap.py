@@ -59,6 +59,16 @@ def bootstrap_services(route_config_cls):
                 "Geocoding service initialized"
             )
 
+            logger.info(
+                "Cache path: %s",
+                settings.GEOCODE_CACHE_PATH,
+            )
+
+            logger.info(
+                "Cache exists: %s",
+                settings.GEOCODE_CACHE_PATH.exists(),
+            )
+            
             # Fuel station index
             route_config_cls.fuel_station_index = (
                 load_fuel_stations(
