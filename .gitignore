@@ -8,7 +8,6 @@ __pycache__/
 .venv/
 route_optimizer/.venv/
 route_optimizer/.env
-route_optimizer/geocode_cache.db
 route_optimizer/render-data/
 .codex
 tailwind.config.js
