@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.info("fuel.py import started")
 """
 Fuel station data service.
 
@@ -280,3 +285,4 @@ def load_fuel_stations(
         )
 
     return FuelStationIndex(stations)
+  logger.info("fuel.py import finished")
