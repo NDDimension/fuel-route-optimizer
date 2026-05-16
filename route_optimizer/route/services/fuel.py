@@ -1,8 +1,3 @@
-import logging
-
-logger = logging.getLogger(__name__)
-
-logger.info("fuel.py import started")
 """
 Fuel station data service.
 
@@ -42,6 +37,7 @@ from .geocoding import GeocodingService
 
 logger = logging.getLogger(__name__)
 
+logger.info("fuel.py import started")
 EARTH_RADIUS_MILES = 3_958.8  # mean Earth radius in miles
 
 
